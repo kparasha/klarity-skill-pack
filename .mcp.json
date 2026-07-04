@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "klarity": {
+      "command": "node",
+      "args": ["mock-workspace/server.mjs"]
+    }
+  }
+}

@@ -1,0 +1,860 @@
+{
+  "workspace": {
+    "resource_key": "ws_meridian_finops",
+    "name": "Meridian Software — Finance Operations",
+    "active": true,
+    "description": "Synthetic demo workspace modeled on a mid-market B2B SaaS finance org. All data is fictional."
+  },
+  "hierarchy": [
+    {
+      "node_key": "hn_root",
+      "name": "Meridian Finance Operations",
+      "kind": "workspace_root",
+      "parent": null,
+      "children": ["hn_o2c", "hn_p2p", "hn_r2r"],
+      "process": null,
+      "attributes": {}
+    },
+    {
+      "node_key": "hn_o2c",
+      "name": "Order-to-Cash",
+      "kind": "value_stream",
+      "parent": "hn_root",
+      "children": ["hn_quote_approval", "hn_sales_order_entry", "hn_invoice_generation", "hn_collections", "hn_rev_rec"],
+      "process": null,
+      "attributes": {"owner_team": "Revenue Operations", "system_of_record": "Salesforce + NetSuite"}
+    },
+    {
+      "node_key": "hn_p2p",
+      "name": "Procure-to-Pay",
+      "kind": "value_stream",
+      "parent": "hn_root",
+      "children": ["hn_vendor_onboarding", "hn_vendor_onboarding_emea", "hn_purchase_requisition", "hn_ap_exceptions", "hn_payment_run"],
+      "process": null,
+      "attributes": {"owner_team": "Accounts Payable", "system_of_record": "NetSuite + Coupa"}
+    },
+    {
+      "node_key": "hn_r2r",
+      "name": "Record-to-Report",
+      "kind": "value_stream",
+      "parent": "hn_root",
+      "children": ["hn_close_checklist", "hn_bs_recon", "hn_flux_analysis"],
+      "process": null,
+      "attributes": {"owner_team": "Controllership", "system_of_record": "NetSuite + FloQast"}
+    },
+    {"node_key": "hn_quote_approval", "name": "Quote Approval", "kind": "process_node", "parent": "hn_o2c", "children": [], "process": "proc_quote_approval", "attributes": {}},
+    {"node_key": "hn_sales_order_entry", "name": "Sales Order Entry", "kind": "process_node", "parent": "hn_o2c", "children": [], "process": "proc_sales_order_entry", "attributes": {}},
+    {"node_key": "hn_invoice_generation", "name": "Invoice Generation", "kind": "process_node", "parent": "hn_o2c", "children": [], "process": "proc_invoice_generation", "attributes": {}},
+    {"node_key": "hn_collections", "name": "Collections & Dunning", "kind": "process_node", "parent": "hn_o2c", "children": [], "process": "proc_collections_dunning", "attributes": {}},
+    {"node_key": "hn_rev_rec", "name": "Revenue Recognition", "kind": "process_node", "parent": "hn_o2c", "children": [], "process": "proc_revenue_recognition", "attributes": {}},
+    {"node_key": "hn_vendor_onboarding", "name": "Vendor Onboarding (US)", "kind": "process_node", "parent": "hn_p2p", "children": [], "process": "proc_vendor_onboarding_us", "attributes": {}},
+    {"node_key": "hn_vendor_onboarding_emea", "name": "Vendor Onboarding (EMEA)", "kind": "process_node", "parent": "hn_p2p", "children": [], "process": "proc_vendor_onboarding_emea", "attributes": {}},
+    {"node_key": "hn_purchase_requisition", "name": "Purchase Requisition", "kind": "process_node", "parent": "hn_p2p", "children": [], "process": "proc_purchase_requisition", "attributes": {}},
+    {"node_key": "hn_ap_exceptions", "name": "AP Invoice Exception Handling", "kind": "process_node", "parent": "hn_p2p", "children": [], "process": "proc_ap_invoice_exceptions", "attributes": {}},
+    {"node_key": "hn_payment_run", "name": "Weekly Payment Run", "kind": "process_node", "parent": "hn_p2p", "children": [], "process": "proc_payment_run", "attributes": {}},
+    {"node_key": "hn_close_checklist", "name": "Month-End Close Checklist", "kind": "process_node", "parent": "hn_r2r", "children": [], "process": "proc_month_end_close", "attributes": {}},
+    {"node_key": "hn_bs_recon", "name": "Balance Sheet Reconciliation", "kind": "process_node", "parent": "hn_r2r", "children": [], "process": "proc_bs_reconciliation", "attributes": {}},
+    {"node_key": "hn_flux_analysis", "name": "Flux Analysis", "kind": "process_node", "parent": "hn_r2r", "children": [], "process": "proc_flux_analysis", "attributes": {}}
+  ],
+  "processes": [
+    {
+      "resource_key": "proc_ap_invoice_exceptions",
+      "name": "AP Invoice Exception Handling",
+      "objective": "Resolve vendor invoices that fail 3-way match (PO, receipt, invoice) so they can post to NetSuite and enter the payment run.",
+      "team": "Accounts Payable",
+      "value_stream": "Procure-to-Pay",
+      "hierarchy_node": "hn_ap_exceptions",
+      "attributes": {"automation_status": "manual", "system_of_record": "NetSuite", "control_level": "standard", "monthly_volume": "~340 exceptions", "avg_handle_time_minutes": 19},
+      "current_version": {
+        "version_label": "v7",
+        "updated_at": "2026-06-18T17:20:00Z",
+        "updated_by": "Priya Raman",
+        "change_summary": "Added Coupa comment requirement before rejecting an invoice back to the vendor.",
+        "steps": [
+          {"index": 1, "name": "Pull exception queue", "type": "system", "description": "Open the NetSuite saved search 'AP – Failed 3-Way Match' each morning."},
+          {"index": 2, "name": "Classify the exception", "type": "manual", "description": "Determine root cause: price variance, quantity variance, missing PO, or missing receipt."},
+          {"index": 3, "name": "Locate the PO", "type": "manual", "description": "Find the referenced PO in Coupa. If the vendor omitted the PO number, search vendor email threads in Outlook."},
+          {"index": 4, "name": "Correct and re-match", "type": "manual", "description": "Fix the mismatch (update PO line, request receipt, or edit invoice header) and re-run the match."},
+          {"index": 5, "name": "Comment and route", "type": "manual", "description": "Log resolution in Coupa comments; route price variances above $2,500 to the procurement lead for approval."},
+          {"index": 6, "name": "Post to NetSuite", "type": "system", "description": "Approved invoices post automatically on the next sync."}
+        ],
+        "policies": ["Price variances >$2,500 require procurement lead approval.", "Never bypass a failed match by keying a manual journal entry.", "All rejections back to vendors must include a Coupa comment (added in v7)."],
+        "linked_artifacts": ["art_ap_exception_sop", "art_ap_walkthrough_video", "art_netsuite_import_log"]
+      },
+      "dependencies": {"upstream": ["proc_purchase_requisition", "proc_vendor_onboarding_us"], "downstream": ["proc_payment_run", "proc_month_end_close"]},
+      "history": [
+        {"version_label": "v7", "updated_at": "2026-06-18T17:20:00Z", "updated_by": "Priya Raman", "change_summary": "Added Coupa comment requirement before rejecting an invoice back to the vendor."},
+        {"version_label": "v6", "updated_at": "2026-04-02T15:00:00Z", "updated_by": "Priya Raman", "change_summary": "Raised procurement-approval threshold from $1,000 to $2,500."},
+        {"version_label": "v5", "updated_at": "2026-01-21T18:30:00Z", "updated_by": "Dan Okafor", "change_summary": "Documented the Outlook search fallback for missing PO numbers."}
+      ]
+    },
+    {
+      "resource_key": "proc_revenue_recognition",
+      "name": "Revenue Recognition",
+      "objective": "Recognize subscription and services revenue under ASC 606 each month, producing the rev-rec journal entries and deferred revenue waterfall.",
+      "team": "Controllership",
+      "value_stream": "Order-to-Cash",
+      "hierarchy_node": "hn_rev_rec",
+      "attributes": {"automation_status": "partially_automated", "system_of_record": "NetSuite ARM", "control_level": "SOX_key_control", "control_ids": ["R2R-04", "R2R-07"], "monthly_volume": "~1,900 contracts"},
+      "current_version": {
+        "version_label": "v12",
+        "updated_at": "2026-06-27T21:05:00Z",
+        "updated_by": "Dan Okafor",
+        "change_summary": "Removed the second-reviewer sign-off on the deferred revenue waterfall; ARM reconciliation report now considered sufficient.",
+        "steps": [
+          {"index": 1, "name": "Sync closed-won contracts", "type": "system", "description": "NetSuite ARM ingests closed-won opportunities and amendments from Salesforce CPQ nightly."},
+          {"index": 2, "name": "Review new revenue arrangements", "type": "manual", "description": "Revenue accountant reviews new arrangements for non-standard terms (usage tiers, ramp deals, multi-element)."},
+          {"index": 3, "name": "Run rev-rec schedules", "type": "system", "description": "ARM generates recognition schedules and proposed journal entries."},
+          {"index": 4, "name": "Reconcile waterfall", "type": "manual", "description": "Tie the deferred revenue waterfall to the GL; investigate variances >$10k."},
+          {"index": 5, "name": "Post journal entries", "type": "manual", "description": "Controller approves and posts the rev-rec batch (control R2R-04)."}
+        ],
+        "policies": ["All non-standard deals require a documented ASC 606 memo (control R2R-07).", "Rev-rec batch posting requires controller approval (control R2R-04).", "Waterfall variances >$10k must be resolved before close day 5."],
+        "linked_artifacts": ["art_revrec_gold_sop", "art_asc606_memo_template", "art_waterfall_recon_workbook"]
+      },
+      "dependencies": {"upstream": ["proc_sales_order_entry", "proc_invoice_generation"], "downstream": ["proc_month_end_close", "proc_flux_analysis"]},
+      "history": [
+        {"version_label": "v12", "updated_at": "2026-06-27T21:05:00Z", "updated_by": "Dan Okafor", "change_summary": "Removed the second-reviewer sign-off on the deferred revenue waterfall; ARM reconciliation report now considered sufficient."},
+        {"version_label": "v11", "updated_at": "2026-05-30T16:45:00Z", "updated_by": "Dan Okafor", "change_summary": "Added usage-tier true-up substep to arrangement review."},
+        {"version_label": "v10", "updated_at": "2026-03-15T14:10:00Z", "updated_by": "Mei Chen", "change_summary": "Migrated waterfall reconciliation from Excel to the ARM reconciliation report."}
+      ]
+    },
+    {
+      "resource_key": "proc_vendor_onboarding_us",
+      "name": "Vendor Onboarding (US)",
+      "objective": "Collect W-9, banking details, and compliance attestations for new US vendors and create the vendor record in NetSuite and Coupa.",
+      "team": "Accounts Payable",
+      "value_stream": "Procure-to-Pay",
+      "hierarchy_node": "hn_vendor_onboarding",
+      "attributes": {"automation_status": "manual", "system_of_record": "Coupa", "control_level": "standard", "monthly_volume": "~45 vendors", "avg_cycle_days": 6},
+      "current_version": {
+        "version_label": "v4",
+        "updated_at": "2026-05-12T19:00:00Z",
+        "updated_by": "Priya Raman",
+        "change_summary": "Added OFAC screening step before record creation.",
+        "steps": [
+          {"index": 1, "name": "Send intake form", "type": "manual", "description": "Email the vendor the onboarding packet (W-9, ACH form, security questionnaire)."},
+          {"index": 2, "name": "Chase and collect documents", "type": "manual", "description": "Follow up by email until all documents are returned; verify W-9 TIN against IRS records."},
+          {"index": 3, "name": "OFAC screening", "type": "manual", "description": "Screen the vendor against the OFAC SDN list; save the screenshot to the vendor folder."},
+          {"index": 4, "name": "Verify banking by callback", "type": "manual", "description": "Call the vendor at a number sourced independently of the email thread to confirm ACH details."},
+          {"index": 5, "name": "Create vendor records", "type": "manual", "description": "Key the vendor into Coupa; the NetSuite record syncs from Coupa."}
+        ],
+        "policies": ["Banking details must be verified by callback before any payment.", "No vendor record without completed OFAC screening."],
+        "linked_artifacts": ["art_vendor_onboarding_checklist"]
+      },
+      "dependencies": {"upstream": [], "downstream": ["proc_purchase_requisition", "proc_ap_invoice_exceptions", "proc_payment_run"]},
+      "history": [
+        {"version_label": "v4", "updated_at": "2026-05-12T19:00:00Z", "updated_by": "Priya Raman", "change_summary": "Added OFAC screening step before record creation."},
+        {"version_label": "v3", "updated_at": "2026-02-08T17:30:00Z", "updated_by": "Dan Okafor", "change_summary": "Added independent-callback banking verification after a fraud attempt."}
+      ]
+    },
+    {
+      "resource_key": "proc_vendor_onboarding_emea",
+      "name": "Vendor Onboarding (EMEA)",
+      "objective": "Collect tax forms, banking details (IBAN), and compliance attestations for new EMEA vendors and create the vendor record in NetSuite.",
+      "team": "EMEA Finance (Dublin)",
+      "value_stream": "Procure-to-Pay",
+      "hierarchy_node": "hn_vendor_onboarding_emea",
+      "attributes": {"automation_status": "manual", "system_of_record": "NetSuite", "control_level": "standard", "monthly_volume": "~18 vendors", "avg_cycle_days": 9},
+      "current_version": {
+        "version_label": "v2",
+        "updated_at": "2026-03-20T11:00:00Z",
+        "updated_by": "Sinead Walsh",
+        "change_summary": "Documented VAT number validation via VIES.",
+        "steps": [
+          {"index": 1, "name": "Send intake email", "type": "manual", "description": "Email the vendor a request for tax residency form, IBAN, and VAT number."},
+          {"index": 2, "name": "Validate VAT via VIES", "type": "manual", "description": "Check the VAT number on the EU VIES portal; save a PDF of the result."},
+          {"index": 3, "name": "Verify banking by callback", "type": "manual", "description": "Call the vendor to confirm IBAN details."},
+          {"index": 4, "name": "Create vendor record", "type": "manual", "description": "Key the vendor directly into NetSuite (EMEA does not use Coupa)."}
+        ],
+        "policies": ["Banking details must be verified by callback before any payment."],
+        "linked_artifacts": []
+      },
+      "dependencies": {"upstream": [], "downstream": ["proc_payment_run"]},
+      "history": [
+        {"version_label": "v2", "updated_at": "2026-03-20T11:00:00Z", "updated_by": "Sinead Walsh", "change_summary": "Documented VAT number validation via VIES."}
+      ]
+    },
+    {
+      "resource_key": "proc_month_end_close",
+      "name": "Month-End Close Checklist",
+      "objective": "Execute the month-end close on a 5-business-day timeline, coordinating subledger closes, reconciliations, and reporting sign-offs in FloQast.",
+      "team": "Controllership",
+      "value_stream": "Record-to-Report",
+      "hierarchy_node": "hn_close_checklist",
+      "attributes": {"automation_status": "partially_automated", "system_of_record": "FloQast", "control_level": "SOX_entity_level", "close_target_days": 5, "last_close_actual_days": 7},
+      "current_version": {
+        "version_label": "v9",
+        "updated_at": "2026-06-30T22:40:00Z",
+        "updated_by": "Mei Chen",
+        "change_summary": "Moved AP subledger close from day 2 to day 1 to relieve day-3 bottleneck.",
+        "steps": [
+          {"index": 1, "name": "Close AP subledger", "type": "manual", "description": "AP resolves or accrues open exceptions and closes the subledger (day 1)."},
+          {"index": 2, "name": "Close AR and billing", "type": "manual", "description": "Billing finalizes invoicing; AR posts cash receipts (day 2)."},
+          {"index": 3, "name": "Run revenue recognition", "type": "manual", "description": "Controllership executes the rev-rec process and posts the batch (day 3)."},
+          {"index": 4, "name": "Balance sheet reconciliations", "type": "manual", "description": "Preparers complete recons in FloQast; reviewers sign off (day 4)."},
+          {"index": 5, "name": "Flux analysis and reporting", "type": "manual", "description": "Run flux analysis, draft the reporting package, controller sign-off (day 5)."}
+        ],
+        "policies": ["No close task may be signed off by its preparer.", "Close calendar is published in FloQast before day 1."],
+        "linked_artifacts": ["art_close_calendar"]
+      },
+      "dependencies": {"upstream": ["proc_ap_invoice_exceptions", "proc_revenue_recognition", "proc_bs_reconciliation", "proc_collections_dunning"], "downstream": ["proc_flux_analysis"]},
+      "history": [
+        {"version_label": "v9", "updated_at": "2026-06-30T22:40:00Z", "updated_by": "Mei Chen", "change_summary": "Moved AP subledger close from day 2 to day 1 to relieve day-3 bottleneck."},
+        {"version_label": "v8", "updated_at": "2026-04-30T20:15:00Z", "updated_by": "Mei Chen", "change_summary": "Added pre-close accrual review meeting on business day -2."}
+      ]
+    },
+    {
+      "resource_key": "proc_quote_approval",
+      "name": "Quote Approval",
+      "objective": "Approve non-standard sales quotes (discounts, payment terms, legal redlines) before order form signature.",
+      "team": "Deal Desk",
+      "value_stream": "Order-to-Cash",
+      "hierarchy_node": "hn_quote_approval",
+      "attributes": {"automation_status": "automated_workflow", "system_of_record": "Salesforce CPQ", "control_level": "standard", "monthly_volume": "~220 quotes"},
+      "current_version": {
+        "version_label": "v5",
+        "updated_at": "2026-05-05T18:00:00Z",
+        "updated_by": "Jordan Lee",
+        "change_summary": "Auto-approve discounts under 15% for renewals.",
+        "steps": [
+          {"index": 1, "name": "Submit quote", "type": "system", "description": "Rep submits quote in CPQ; approval matrix routes by discount tier and term changes."},
+          {"index": 2, "name": "Deal desk review", "type": "manual", "description": "Deal desk validates pricing, terms, and rev-rec impact for non-standard elements."},
+          {"index": 3, "name": "Finance/legal escalation", "type": "manual", "description": "Deals with >30% discount or redlined terms route to finance and legal."}
+        ],
+        "policies": ["Non-standard payment terms require controller review for rev-rec impact."],
+        "linked_artifacts": []
+      },
+      "dependencies": {"upstream": [], "downstream": ["proc_sales_order_entry", "proc_revenue_recognition"]},
+      "history": [
+        {"version_label": "v5", "updated_at": "2026-05-05T18:00:00Z", "updated_by": "Jordan Lee", "change_summary": "Auto-approve discounts under 15% for renewals."}
+      ]
+    },
+    {
+      "resource_key": "proc_sales_order_entry",
+      "name": "Sales Order Entry",
+      "objective": "Convert signed order forms into NetSuite sales orders with correct billing schedules and rev-rec treatment.",
+      "team": "Revenue Operations",
+      "value_stream": "Order-to-Cash",
+      "hierarchy_node": "hn_sales_order_entry",
+      "attributes": {"automation_status": "partially_automated", "system_of_record": "NetSuite", "control_level": "standard", "monthly_volume": "~180 orders"},
+      "current_version": {
+        "version_label": "v6",
+        "updated_at": "2026-06-10T16:30:00Z",
+        "updated_by": "Jordan Lee",
+        "change_summary": "Documented the manual re-entry path for CPQ sync failures.",
+        "steps": [
+          {"index": 1, "name": "CPQ-to-NetSuite sync", "type": "system", "description": "Signed order forms sync from Salesforce CPQ to NetSuite as sales orders."},
+          {"index": 2, "name": "Exception re-entry", "type": "manual", "description": "Orders that fail sync validation are keyed manually into NetSuite from the order form PDF."},
+          {"index": 3, "name": "Billing schedule review", "type": "manual", "description": "Rev ops verifies billing schedule and provisioning trigger for each order."}
+        ],
+        "policies": ["Manually re-keyed orders require a second-person review before invoicing."],
+        "linked_artifacts": []
+      },
+      "dependencies": {"upstream": ["proc_quote_approval"], "downstream": ["proc_invoice_generation", "proc_revenue_recognition"]},
+      "history": [
+        {"version_label": "v6", "updated_at": "2026-06-10T16:30:00Z", "updated_by": "Jordan Lee", "change_summary": "Documented the manual re-entry path for CPQ sync failures."}
+      ]
+    },
+    {
+      "resource_key": "proc_invoice_generation",
+      "name": "Invoice Generation",
+      "objective": "Generate and deliver customer invoices from NetSuite billing schedules, including consolidated and portal-submitted invoices.",
+      "team": "Billing",
+      "value_stream": "Order-to-Cash",
+      "hierarchy_node": "hn_invoice_generation",
+      "attributes": {"automation_status": "partially_automated", "system_of_record": "NetSuite", "control_level": "standard", "monthly_volume": "~2,100 invoices"},
+      "current_version": {
+        "version_label": "v8",
+        "updated_at": "2026-06-05T15:00:00Z",
+        "updated_by": "Alicia Gomez",
+        "change_summary": "Added Ariba portal submission substep for enterprise accounts.",
+        "steps": [
+          {"index": 1, "name": "Run billing batch", "type": "system", "description": "NetSuite generates invoices from billing schedules on the 1st."},
+          {"index": 2, "name": "Portal submissions", "type": "manual", "description": "For ~60 enterprise accounts, manually upload invoices to customer AP portals (Ariba, Coupa, Tungsten)."},
+          {"index": 3, "name": "Delivery confirmation", "type": "manual", "description": "Confirm portal acceptance; re-submit rejects with corrected PO or entity fields."}
+        ],
+        "policies": ["Portal rejects must be resolved within 3 business days."],
+        "linked_artifacts": []
+      },
+      "dependencies": {"upstream": ["proc_sales_order_entry"], "downstream": ["proc_collections_dunning", "proc_revenue_recognition"]},
+      "history": [
+        {"version_label": "v8", "updated_at": "2026-06-05T15:00:00Z", "updated_by": "Alicia Gomez", "change_summary": "Added Ariba portal submission substep for enterprise accounts."}
+      ]
+    },
+    {
+      "resource_key": "proc_collections_dunning",
+      "name": "Collections & Dunning",
+      "objective": "Collect overdue receivables via automated dunning sequences and escalation to collectors, keeping DSO under 52 days.",
+      "team": "Accounts Receivable",
+      "value_stream": "Order-to-Cash",
+      "hierarchy_node": "hn_collections",
+      "attributes": {"automation_status": "partially_automated", "system_of_record": "NetSuite + Tesorio", "control_level": "standard", "current_dso_days": 58},
+      "current_version": {
+        "version_label": "v3",
+        "updated_at": "2026-04-22T14:00:00Z",
+        "updated_by": "Alicia Gomez",
+        "change_summary": "Added CSM notification before final dunning notice.",
+        "steps": [
+          {"index": 1, "name": "Automated dunning", "type": "system", "description": "Tesorio sends the 15/30/45-day reminder sequence."},
+          {"index": 2, "name": "Collector outreach", "type": "manual", "description": "Accounts >60 days past due are assigned to a collector for direct outreach."},
+          {"index": 3, "name": "Escalation", "type": "manual", "description": "Notify the CSM, then send final notice; >90 days goes to the controller for hold/write-off decision."}
+        ],
+        "policies": ["Service holds require controller approval."],
+        "linked_artifacts": []
+      },
+      "dependencies": {"upstream": ["proc_invoice_generation"], "downstream": ["proc_month_end_close"]},
+      "history": [
+        {"version_label": "v3", "updated_at": "2026-04-22T14:00:00Z", "updated_by": "Alicia Gomez", "change_summary": "Added CSM notification before final dunning notice."}
+      ]
+    },
+    {
+      "resource_key": "proc_purchase_requisition",
+      "name": "Purchase Requisition",
+      "objective": "Route purchase requests through budget-owner and procurement approval, producing a PO in Coupa.",
+      "team": "Procurement",
+      "value_stream": "Procure-to-Pay",
+      "hierarchy_node": "hn_purchase_requisition",
+      "attributes": {"automation_status": "automated_workflow", "system_of_record": "Coupa", "control_level": "standard", "monthly_volume": "~260 requisitions"},
+      "current_version": {
+        "version_label": "v4",
+        "updated_at": "2026-03-02T13:00:00Z",
+        "updated_by": "Tomás Rivera",
+        "change_summary": "Security review gate added for new SaaS purchases.",
+        "steps": [
+          {"index": 1, "name": "Submit requisition", "type": "system", "description": "Requester submits in Coupa; routing by amount and category."},
+          {"index": 2, "name": "Budget owner approval", "type": "manual", "description": "Cost-center owner approves against budget."},
+          {"index": 3, "name": "Procurement review", "type": "manual", "description": "Procurement checks vendor status and negotiates if >$25k; new SaaS triggers security review."},
+          {"index": 4, "name": "PO issued", "type": "system", "description": "Coupa issues the PO to the vendor."}
+        ],
+        "policies": ["No PO, no pay — invoices without a PO reference are rejected."],
+        "linked_artifacts": []
+      },
+      "dependencies": {"upstream": ["proc_vendor_onboarding_us"], "downstream": ["proc_ap_invoice_exceptions"]},
+      "history": [
+        {"version_label": "v4", "updated_at": "2026-03-02T13:00:00Z", "updated_by": "Tomás Rivera", "change_summary": "Security review gate added for new SaaS purchases."}
+      ]
+    },
+    {
+      "resource_key": "proc_payment_run",
+      "name": "Weekly Payment Run",
+      "objective": "Execute the weekly ACH/wire payment batch for approved invoices, with dual authorization.",
+      "team": "Accounts Payable",
+      "value_stream": "Procure-to-Pay",
+      "hierarchy_node": "hn_payment_run",
+      "attributes": {"automation_status": "partially_automated", "system_of_record": "NetSuite + JPMC Access", "control_level": "SOX_key_control", "control_ids": ["P2P-09"], "weekly_volume": "~$1.4M"},
+      "current_version": {
+        "version_label": "v5",
+        "updated_at": "2026-02-14T16:00:00Z",
+        "updated_by": "Priya Raman",
+        "change_summary": "Dual-authorization threshold lowered to $10k for wires.",
+        "steps": [
+          {"index": 1, "name": "Build payment batch", "type": "manual", "description": "AP selects approved invoices due within 7 days in NetSuite."},
+          {"index": 2, "name": "First approval", "type": "manual", "description": "AP manager reviews the batch against the cash forecast."},
+          {"index": 3, "name": "Release in bank portal", "type": "manual", "description": "Treasury releases ACH batch; wires >$10k need a second authorizer (control P2P-09)."}
+        ],
+        "policies": ["Wires >$10k require dual authorization (control P2P-09).", "No same-day vendor banking changes and payment release."],
+        "linked_artifacts": []
+      },
+      "dependencies": {"upstream": ["proc_ap_invoice_exceptions", "proc_vendor_onboarding_us", "proc_vendor_onboarding_emea"], "downstream": ["proc_month_end_close"]},
+      "history": [
+        {"version_label": "v5", "updated_at": "2026-02-14T16:00:00Z", "updated_by": "Priya Raman", "change_summary": "Dual-authorization threshold lowered to $10k for wires."}
+      ]
+    },
+    {
+      "resource_key": "proc_bs_reconciliation",
+      "name": "Balance Sheet Reconciliation",
+      "objective": "Prepare and review balance sheet account reconciliations in FloQast by close day 4.",
+      "team": "Controllership",
+      "value_stream": "Record-to-Report",
+      "hierarchy_node": "hn_bs_recon",
+      "attributes": {"automation_status": "partially_automated", "system_of_record": "FloQast", "control_level": "SOX_key_control", "control_ids": ["R2R-11"], "account_count": 84},
+      "current_version": {
+        "version_label": "v6",
+        "updated_at": "2026-05-31T19:30:00Z",
+        "updated_by": "Mei Chen",
+        "change_summary": "Auto-certification enabled for zero-balance accounts.",
+        "steps": [
+          {"index": 1, "name": "Auto-certify eligible accounts", "type": "system", "description": "FloQast auto-certifies zero-balance and threshold-eligible accounts."},
+          {"index": 2, "name": "Prepare reconciliations", "type": "manual", "description": "Preparers tie GL balances to subledgers/bank statements and attach support."},
+          {"index": 3, "name": "Review and sign off", "type": "manual", "description": "Reviewers sign off in FloQast (control R2R-11); items >$25k unreconciled escalate to controller."}
+        ],
+        "policies": ["Preparer and reviewer must be different people (control R2R-11)."],
+        "linked_artifacts": []
+      },
+      "dependencies": {"upstream": ["proc_ap_invoice_exceptions", "proc_collections_dunning"], "downstream": ["proc_month_end_close", "proc_flux_analysis"]},
+      "history": [
+        {"version_label": "v6", "updated_at": "2026-05-31T19:30:00Z", "updated_by": "Mei Chen", "change_summary": "Auto-certification enabled for zero-balance accounts."}
+      ]
+    },
+    {
+      "resource_key": "proc_flux_analysis",
+      "name": "Flux Analysis",
+      "objective": "Explain month-over-month and budget-vs-actual variances above materiality thresholds for the reporting package.",
+      "team": "FP&A",
+      "value_stream": "Record-to-Report",
+      "hierarchy_node": "hn_flux_analysis",
+      "attributes": {"automation_status": "manual", "system_of_record": "NetSuite + Excel", "control_level": "standard", "threshold": "$50k or 10%"},
+      "current_version": {
+        "version_label": "v2",
+        "updated_at": "2026-01-31T20:00:00Z",
+        "updated_by": "Noah Kim",
+        "change_summary": "Initial documented version from capture sessions.",
+        "steps": [
+          {"index": 1, "name": "Export TB and build flux file", "type": "manual", "description": "Export trial balance from NetSuite, refresh the Excel flux model."},
+          {"index": 2, "name": "Draft variance explanations", "type": "manual", "description": "FP&A drafts explanations for variances over threshold, chasing detail with process owners over Slack."},
+          {"index": 3, "name": "Controller review", "type": "manual", "description": "Controller challenges explanations and approves the final flux commentary."}
+        ],
+        "policies": ["Every variance >$50k or 10% requires a written explanation."],
+        "linked_artifacts": []
+      },
+      "dependencies": {"upstream": ["proc_month_end_close", "proc_revenue_recognition", "proc_bs_reconciliation"], "downstream": []},
+      "history": [
+        {"version_label": "v2", "updated_at": "2026-01-31T20:00:00Z", "updated_by": "Noah Kim", "change_summary": "Initial documented version from capture sessions."}
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "resource_key": "obs_apex_001",
+      "process_key": "proc_ap_invoice_exceptions",
+      "version_label": "v7",
+      "timestamp": "2026-06-24T15:42:00Z",
+      "performer": "AP Analyst (Riley T.)",
+      "session_ref": "sess_0624_riley",
+      "rationale": "Routine morning exception-queue session covering 14 failed matches.",
+      "windows_time_frame": "09:05–11:20 PT",
+      "duration_minutes": 135,
+      "negative_deviations": [
+        "PO number missing on 5 of 14 invoices; analyst searched Outlook threads and re-keyed PO numbers into NetSuite by hand.",
+        "NetSuite match re-run failed twice on the same invoice; analyst retried until the sync job picked it up."
+      ],
+      "positive_deviations": [
+        "Analyst kept a personal Excel tracker of recurring vendors with missing POs — not part of the documented process but visibly speeds up classification."
+      ],
+      "narrative": "Analyst opened the 'AP – Failed 3-Way Match' saved search (14 items). For 5 invoices from recurring vendors (Northwind Facilities, KJ Staffing), the PO number was absent from the invoice header. The analyst searched Outlook for the vendor thread, found the PO in an email footer, and re-keyed it into the NetSuite invoice record. One invoice required two match re-runs before the Coupa sync registered the fix. Two price variances >$2,500 were routed to procurement per policy.",
+      "runtime_inputs": {"queue_size": 14, "sources": ["NetSuite", "Coupa", "Outlook"]},
+      "runtime_outputs": {"resolved": 11, "routed_to_procurement": 2, "pending_vendor_response": 1}
+    },
+    {
+      "resource_key": "obs_apex_002",
+      "process_key": "proc_ap_invoice_exceptions",
+      "version_label": "v7",
+      "timestamp": "2026-06-25T16:10:00Z",
+      "performer": "AP Analyst (Riley T.)",
+      "session_ref": "sess_0625_riley",
+      "rationale": "Daily exception queue, 11 failed matches.",
+      "windows_time_frame": "09:12–10:58 PT",
+      "duration_minutes": 106,
+      "negative_deviations": [
+        "Missing PO numbers on 4 of 11 invoices — same Outlook-search-and-re-key workaround as prior sessions.",
+        "Coupa comment step skipped on one rejection (new v7 requirement not yet habitual)."
+      ],
+      "positive_deviations": [],
+      "narrative": "Same morning pattern. 4 of 11 invoices lacked PO references, all from vendors onboarded before the 'no PO no pay' policy. Analyst re-keyed POs from email into NetSuite. One rejection to vendor went out without the newly required Coupa comment.",
+      "runtime_inputs": {"queue_size": 11, "sources": ["NetSuite", "Coupa", "Outlook"]},
+      "runtime_outputs": {"resolved": 9, "rejected_to_vendor": 1, "pending": 1}
+    },
+    {
+      "resource_key": "obs_apex_003",
+      "process_key": "proc_ap_invoice_exceptions",
+      "version_label": "v7",
+      "timestamp": "2026-06-26T15:55:00Z",
+      "performer": "AP Analyst (Sam D.)",
+      "session_ref": "sess_0626_sam",
+      "rationale": "Covering analyst ran the queue; 16 failed matches.",
+      "windows_time_frame": "08:50–11:40 PT",
+      "duration_minutes": 170,
+      "negative_deviations": [
+        "Missing PO numbers on 6 of 16 invoices; covering analyst was unaware of the Outlook fallback and pinged the AP channel in Slack, waiting ~40 minutes for guidance before re-keying POs manually."
+      ],
+      "positive_deviations": [],
+      "narrative": "Covering analyst hit the same missing-PO pattern but lacked the tribal knowledge of the Outlook search fallback. Waited on Slack for guidance, then manually re-keyed 6 PO numbers. Session ran ~35 minutes over the typical window.",
+      "runtime_inputs": {"queue_size": 16, "sources": ["NetSuite", "Coupa", "Outlook", "Slack"]},
+      "runtime_outputs": {"resolved": 12, "routed_to_procurement": 1, "pending": 3}
+    },
+    {
+      "resource_key": "obs_apex_004",
+      "process_key": "proc_ap_invoice_exceptions",
+      "version_label": "v7",
+      "timestamp": "2026-06-30T16:20:00Z",
+      "performer": "AP Analyst (Riley T.)",
+      "session_ref": "sess_0630_riley",
+      "rationale": "Month-end heavy queue, 22 failed matches (day-1 close pressure).",
+      "windows_time_frame": "08:30–12:15 PT",
+      "duration_minutes": 200,
+      "negative_deviations": [
+        "Missing PO numbers on 7 of 22 invoices — Outlook search and manual re-key again.",
+        "Under close pressure, two low-dollar exceptions were accrued rather than resolved, deferring work into next month."
+      ],
+      "positive_deviations": [
+        "Analyst batched all procurement-approval items into a single Slack thread with a deadline, cutting approval wait time versus one-off pings."
+      ],
+      "narrative": "Month-end queue spike. The missing-PO re-key pattern consumed roughly 45 minutes of the session. To make the day-1 AP subledger close (new v9 close calendar), the analyst accrued two unresolved low-dollar exceptions.",
+      "runtime_inputs": {"queue_size": 22, "sources": ["NetSuite", "Coupa", "Outlook", "Slack"]},
+      "runtime_outputs": {"resolved": 17, "accrued": 2, "routed_to_procurement": 2, "pending": 1}
+    },
+    {
+      "resource_key": "obs_apex_005",
+      "process_key": "proc_ap_invoice_exceptions",
+      "version_label": "v6",
+      "timestamp": "2026-06-11T15:30:00Z",
+      "performer": "AP Analyst (Riley T.)",
+      "session_ref": "sess_0611_riley",
+      "rationale": "Pre-v7 baseline session, 12 failed matches.",
+      "windows_time_frame": "09:00–10:45 PT",
+      "duration_minutes": 105,
+      "negative_deviations": [
+        "Missing PO numbers on 4 of 12 invoices; Outlook search and manual re-key into NetSuite."
+      ],
+      "positive_deviations": [],
+      "narrative": "Baseline session under v6. Identical missing-PO workaround observed — this pattern predates the v7 change.",
+      "runtime_inputs": {"queue_size": 12, "sources": ["NetSuite", "Coupa", "Outlook"]},
+      "runtime_outputs": {"resolved": 10, "pending": 2}
+    },
+    {
+      "resource_key": "obs_revrec_001",
+      "process_key": "proc_revenue_recognition",
+      "version_label": "v12",
+      "timestamp": "2026-07-01T23:50:00Z",
+      "performer": "Revenue Accountant (Mei C.)",
+      "session_ref": "sess_0701_mei",
+      "rationale": "June close rev-rec run — first execution under v12 (single-reviewer waterfall).",
+      "windows_time_frame": "14:00–19:30 PT",
+      "duration_minutes": 330,
+      "negative_deviations": [
+        "Waterfall variance of $18.4k on a ramp deal took ~2 hours to trace; under v11 the second reviewer had historically caught these at review. No second set of eyes under v12.",
+        "Two usage-tier true-ups were computed in a side Excel file because ARM does not model the customer's tier structure."
+      ],
+      "positive_deviations": [
+        "Accountant annotated the ARM reconciliation report with links to each ASC 606 memo, making the audit trail easier to follow."
+      ],
+      "narrative": "First close on v12. The removed second-reviewer sign-off (control-relevant change to R2R-04 adjacency) shifted variance detection to the preparer alone. An $18.4k waterfall variance on a ramp deal was traced to a mis-dated amendment; resolved before day-5 but consumed the evening. Usage-tier true-ups still live outside ARM in Excel.",
+      "runtime_inputs": {"contracts_processed": 1912, "non_standard_reviewed": 14},
+      "runtime_outputs": {"journal_batches_posted": 1, "variances_resolved": 1, "open_items": 0}
+    },
+    {
+      "resource_key": "obs_revrec_002",
+      "process_key": "proc_revenue_recognition",
+      "version_label": "v11",
+      "timestamp": "2026-06-02T22:15:00Z",
+      "performer": "Revenue Accountant (Mei C.)",
+      "session_ref": "sess_0602_mei",
+      "rationale": "May close rev-rec run under v11.",
+      "windows_time_frame": "13:30–18:00 PT",
+      "duration_minutes": 270,
+      "negative_deviations": [
+        "Usage-tier true-ups computed in a side Excel file outside ARM (same as prior months)."
+      ],
+      "positive_deviations": [],
+      "narrative": "Standard v11 run. Second reviewer flagged one schedule mis-mapping during waterfall sign-off; corrected same day. Usage-tier Excel workaround present.",
+      "runtime_inputs": {"contracts_processed": 1874, "non_standard_reviewed": 11},
+      "runtime_outputs": {"journal_batches_posted": 1, "reviewer_catches": 1}
+    },
+    {
+      "resource_key": "obs_vendus_001",
+      "process_key": "proc_vendor_onboarding_us",
+      "version_label": "v4",
+      "timestamp": "2026-06-20T18:00:00Z",
+      "performer": "AP Analyst (Sam D.)",
+      "session_ref": "sess_0620_sam",
+      "rationale": "Onboarded 3 new vendors.",
+      "windows_time_frame": "13:00–15:10 PT",
+      "duration_minutes": 130,
+      "negative_deviations": [
+        "Document chase required 4 follow-up emails for one vendor; no automated reminder exists.",
+        "OFAC screenshot saved to a personal folder instead of the vendor folder for one vendor."
+      ],
+      "positive_deviations": [],
+      "narrative": "Three vendors onboarded. The intake packet round-trip remains the bottleneck (median 5 days). Callback verification completed for all three.",
+      "runtime_inputs": {"vendors": 3},
+      "runtime_outputs": {"records_created": 3}
+    },
+    {
+      "resource_key": "obs_close_001",
+      "process_key": "proc_month_end_close",
+      "version_label": "v9",
+      "timestamp": "2026-07-02T21:00:00Z",
+      "performer": "Assistant Controller (Mei C.)",
+      "session_ref": "sess_0702_mei",
+      "rationale": "June close, day 1–2 coordination under the new v9 calendar.",
+      "windows_time_frame": "Two-day window",
+      "duration_minutes": 480,
+      "negative_deviations": [
+        "AP made the new day-1 subledger close only by accruing unresolved exceptions (see AP exception observations) — the bottleneck moved rather than disappeared.",
+        "Two reconciliation preparers were blocked on day 4 waiting for the rev-rec batch that posted late on day 3."
+      ],
+      "positive_deviations": [
+        "Pre-close accrual review meeting (added v8) caught three missing accruals before day 1."
+      ],
+      "narrative": "First close on the v9 calendar. Day-1 AP close achieved nominally, but downstream evidence shows exception work was deferred via accruals. Rev-rec posted late day 3 due to the v12 single-reviewer variance chase, compressing day-4 recon work.",
+      "runtime_inputs": {"close_tasks": 142},
+      "runtime_outputs": {"close_days_actual": 6}
+    },
+    {
+      "resource_key": "obs_soe_001",
+      "process_key": "proc_sales_order_entry",
+      "version_label": "v6",
+      "timestamp": "2026-06-16T17:45:00Z",
+      "performer": "Rev Ops Analyst (Jordan L.)",
+      "session_ref": "sess_0616_jordan",
+      "rationale": "Weekly sync-failure cleanup, 9 failed orders.",
+      "windows_time_frame": "10:00–12:30 PT",
+      "duration_minutes": 150,
+      "negative_deviations": [
+        "9 orders failed CPQ→NetSuite sync on entity-mapping errors; each re-keyed manually from the order form PDF (~15 min each).",
+        "Second-person review of re-keyed orders happened next day, delaying invoicing for 3 orders."
+      ],
+      "positive_deviations": [],
+      "narrative": "Sync failures concentrate on multi-entity deals. Manual re-entry from PDFs is error-prone and the second-person review adds a day of latency.",
+      "runtime_inputs": {"failed_orders": 9},
+      "runtime_outputs": {"re_keyed": 9, "delayed_invoices": 3}
+    }
+  ],
+  "activity_timelines": {
+    "obs_apex_001": [
+      {"index": 0, "time": "09:05", "system": "NetSuite", "action": "Opened saved search 'AP – Failed 3-Way Match' (14 results)."},
+      {"index": 1, "time": "09:11", "system": "Coupa", "action": "Looked up PO for Northwind Facilities invoice #NF-2214 — no PO reference on invoice."},
+      {"index": 2, "time": "09:14", "system": "Outlook", "action": "Searched 'Northwind PO'; found PO-8842 in an email footer from 2026-05-30."},
+      {"index": 3, "time": "09:17", "system": "NetSuite", "action": "Manually keyed PO-8842 into invoice header; re-ran match — failed (sync lag)."},
+      {"index": 4, "time": "09:24", "system": "NetSuite", "action": "Re-ran match a second time — passed."},
+      {"index": 5, "time": "09:31", "system": "Excel", "action": "Updated personal tracker 'vendors-missing-PO.xlsx' (not in documented process)."},
+      {"index": 6, "time": "09:38", "system": "Outlook", "action": "Repeated PO search for KJ Staffing invoice #KJ-0067; keyed PO-8911 manually."},
+      {"index": 7, "time": "10:02", "system": "Coupa", "action": "Routed two price variances >$2,500 to procurement lead with comments."},
+      {"index": 8, "time": "11:20", "system": "NetSuite", "action": "Final queue state: 11 resolved, 2 with procurement, 1 pending vendor."}
+    ],
+    "obs_apex_003": [
+      {"index": 0, "time": "08:50", "system": "NetSuite", "action": "Opened exception queue (16 results)."},
+      {"index": 1, "time": "09:05", "system": "Slack", "action": "Posted in #ap-team asking how to handle invoices with no PO number."},
+      {"index": 2, "time": "09:45", "system": "Slack", "action": "Received guidance: search vendor email threads in Outlook for the PO."},
+      {"index": 3, "time": "09:50", "system": "Outlook", "action": "Searched threads for 6 vendors; located 6 PO numbers."},
+      {"index": 4, "time": "10:20", "system": "NetSuite", "action": "Manually keyed 6 PO numbers; re-ran matches."},
+      {"index": 5, "time": "11:40", "system": "NetSuite", "action": "Final queue state: 12 resolved, 1 with procurement, 3 pending."}
+    ],
+    "obs_revrec_001": [
+      {"index": 0, "time": "14:00", "system": "NetSuite ARM", "action": "Ran recognition schedules for June; generated proposed JE batch."},
+      {"index": 1, "time": "15:10", "system": "NetSuite ARM", "action": "Waterfall reconciliation report showed $18.4k variance vs GL."},
+      {"index": 2, "time": "15:25", "system": "Salesforce CPQ", "action": "Traced variance candidates across ramp-deal amendments."},
+      {"index": 3, "time": "17:05", "system": "NetSuite ARM", "action": "Identified mis-dated amendment on contract C-11482; corrected schedule start date."},
+      {"index": 4, "time": "17:40", "system": "Excel", "action": "Computed two usage-tier true-ups in side workbook (outside ARM)."},
+      {"index": 5, "time": "18:55", "system": "NetSuite", "action": "Controller approved and posted rev-rec batch (control R2R-04)."},
+      {"index": 6, "time": "19:30", "system": "NetSuite ARM", "action": "Annotated reconciliation report with links to ASC 606 memos."}
+    ]
+  },
+  "sessions": [
+    {"session_ref": "sess_0702_mei", "created_by": "Mei Chen", "created_at": "2026-07-02T21:00:00Z", "duration_minutes": 480, "processes_updated": ["proc_month_end_close"]},
+    {"session_ref": "sess_0701_mei", "created_by": "Mei Chen", "created_at": "2026-07-01T23:50:00Z", "duration_minutes": 330, "processes_updated": ["proc_revenue_recognition"]},
+    {"session_ref": "sess_0630_riley", "created_by": "Riley Torres", "created_at": "2026-06-30T16:20:00Z", "duration_minutes": 200, "processes_updated": ["proc_ap_invoice_exceptions"]},
+    {"session_ref": "sess_0626_sam", "created_by": "Sam Diallo", "created_at": "2026-06-26T15:55:00Z", "duration_minutes": 170, "processes_updated": ["proc_ap_invoice_exceptions"]},
+    {"session_ref": "sess_0625_riley", "created_by": "Riley Torres", "created_at": "2026-06-25T16:10:00Z", "duration_minutes": 106, "processes_updated": ["proc_ap_invoice_exceptions"]},
+    {"session_ref": "sess_0624_riley", "created_by": "Riley Torres", "created_at": "2026-06-24T15:42:00Z", "duration_minutes": 135, "processes_updated": ["proc_ap_invoice_exceptions"]},
+    {"session_ref": "sess_0620_sam", "created_by": "Sam Diallo", "created_at": "2026-06-20T18:00:00Z", "duration_minutes": 130, "processes_updated": ["proc_vendor_onboarding_us"]},
+    {"session_ref": "sess_0616_jordan", "created_by": "Jordan Lee", "created_at": "2026-06-16T17:45:00Z", "duration_minutes": 150, "processes_updated": ["proc_sales_order_entry"]},
+    {"session_ref": "sess_0611_riley", "created_by": "Riley Torres", "created_at": "2026-06-11T15:30:00Z", "duration_minutes": 105, "processes_updated": ["proc_ap_invoice_exceptions"]},
+    {"session_ref": "sess_0602_mei", "created_by": "Mei Chen", "created_at": "2026-06-02T22:15:00Z", "duration_minutes": 270, "processes_updated": ["proc_revenue_recognition"]}
+  ],
+  "artifacts": [
+    {
+      "resource_key": "art_revrec_gold_sop",
+      "name": "Revenue Recognition SOP (ASC 606) — v4",
+      "type": "document",
+      "origin": "gold_document",
+      "status": "active",
+      "file": {"format": "docx", "size_kb": 412, "uploaded_at": "2026-05-30T16:00:00Z", "uploaded_by": "Dan Okafor"},
+      "input_artifacts": ["art_asc606_memo_template"],
+      "output_artifacts": [],
+      "children": [],
+      "content": [
+        "Revenue Recognition SOP — Meridian Software (ASC 606)",
+        "Version 4 — approved 2026-05-30 by D. Okafor, Controller",
+        "",
+        "1. Scope",
+        "This SOP covers monthly revenue recognition for subscription, usage, and professional services revenue.",
+        "",
+        "2. Controls",
+        "Control R2R-04: The monthly rev-rec journal batch must be approved by the Controller before posting.",
+        "Control R2R-07: Every non-standard arrangement requires a documented ASC 606 memo filed before recognition.",
+        "",
+        "3. Procedure",
+        "3.1 ARM ingests closed-won contracts nightly from Salesforce CPQ.",
+        "3.2 The revenue accountant reviews all new arrangements flagged non-standard.",
+        "3.3 Recognition schedules are generated in ARM; manual schedules are prohibited.",
+        "3.4 The deferred revenue waterfall must tie to the GL within $10,000.",
+        "3.5 The waterfall reconciliation is reviewed and signed off before batch posting.",
+        "    NOTE (v4): sign-off is by preparer plus the ARM reconciliation report. Prior versions required a second reviewer.",
+        "3.6 Usage-tier true-ups: compute per contract tier definitions. ARM does not currently model tier structures;",
+        "    an approved Excel template (WB-TRUEUP-02) is permitted until ARM support ships.",
+        "",
+        "4. Exceptions",
+        "Any deviation from this SOP must be documented in the close binder and reported to the Controller."
+      ]
+    },
+    {
+      "resource_key": "art_ap_exception_sop",
+      "name": "AP Exception Handling SOP",
+      "type": "document",
+      "origin": "user_input",
+      "status": "active",
+      "file": {"format": "pdf", "size_kb": 188, "uploaded_at": "2026-06-18T17:00:00Z", "uploaded_by": "Priya Raman"},
+      "input_artifacts": [],
+      "output_artifacts": [],
+      "children": [],
+      "content": [
+        "AP Invoice Exception Handling — Standard Operating Procedure",
+        "Owner: Priya Raman, AP Manager. Last updated 2026-06-18 (v7).",
+        "",
+        "Daily cadence: work the 'AP – Failed 3-Way Match' queue every business morning.",
+        "Root causes seen in practice: price variance, quantity variance, missing PO reference, missing receipt.",
+        "",
+        "Missing PO reference:",
+        "If the vendor invoice omits the PO number, locate the PO in Coupa by vendor and amount.",
+        "If not found, search the vendor's email thread in Outlook — POs are often quoted in email footers.",
+        "Re-key the PO number into the NetSuite invoice header and re-run the match.",
+        "Known gap: recurring vendors onboarded before the 'no PO, no pay' policy frequently omit PO numbers.",
+        "",
+        "Escalation: price variances above $2,500 route to the procurement lead.",
+        "Rejections: every rejection back to a vendor requires a Coupa comment stating the reason (v7).",
+        "Never bypass a failed match with a manual journal entry."
+      ]
+    },
+    {
+      "resource_key": "art_ap_walkthrough_video",
+      "name": "AP exception queue walkthrough (screen recording)",
+      "type": "video",
+      "origin": "system_input",
+      "status": "processed",
+      "file": {"format": "mp4", "size_kb": 184320, "uploaded_at": "2026-06-24T16:00:00Z", "uploaded_by": "capture-agent"},
+      "input_artifacts": [],
+      "output_artifacts": ["art_ap_walkthrough_transcript"],
+      "children": ["art_ap_walkthrough_transcript"],
+      "content": ["[video artifact — see transcript child artifact art_ap_walkthrough_transcript]"]
+    },
+    {
+      "resource_key": "art_ap_walkthrough_transcript",
+      "name": "AP exception queue walkthrough — transcript",
+      "type": "session_analysis",
+      "origin": "ai_generated",
+      "status": "active",
+      "file": {"format": "txt", "size_kb": 22, "uploaded_at": "2026-06-24T16:20:00Z", "uploaded_by": "capture-agent"},
+      "input_artifacts": ["art_ap_walkthrough_video"],
+      "output_artifacts": [],
+      "children": [],
+      "content": [
+        "Transcript excerpt — AP exception walkthrough, 2026-06-24.",
+        "\"Okay so this one from Northwind again — no PO on the invoice, as usual.\"",
+        "\"What I do is search Outlook for the vendor name, the PO is almost always in their email footer.\"",
+        "\"Then I paste it into the header field here in NetSuite and re-run the match.\"",
+        "\"Sometimes the match fails the first time because Coupa hasn't synced, you just run it again.\"",
+        "\"I keep a spreadsheet of the vendors that always do this — it's like the same eight vendors.\"",
+        "\"Honestly if the intake portal just required a PO field for these vendors we'd save an hour a day.\""
+      ]
+    },
+    {
+      "resource_key": "art_netsuite_import_log",
+      "name": "NetSuite invoice match job log — June 2026",
+      "type": "log",
+      "origin": "system_input",
+      "status": "active",
+      "file": {"format": "log", "size_kb": 96, "uploaded_at": "2026-07-01T08:00:00Z", "uploaded_by": "system"},
+      "input_artifacts": [],
+      "output_artifacts": [],
+      "children": [],
+      "content": [
+        "2026-06-24 09:17:44 MATCH_RUN inv=NF-2214 result=FAIL reason=PO_SYNC_PENDING",
+        "2026-06-24 09:24:02 MATCH_RUN inv=NF-2214 result=PASS",
+        "2026-06-25 09:31:19 MATCH_RUN inv=KJ-0071 result=FAIL reason=PO_NOT_FOUND",
+        "2026-06-25 09:44:53 MATCH_RUN inv=KJ-0071 result=PASS note=manual_po_entry",
+        "2026-06-26 10:22:10 MATCH_RUN inv=NW-3320 result=FAIL reason=PO_NOT_FOUND",
+        "2026-06-26 10:31:47 MATCH_RUN inv=NW-3320 result=PASS note=manual_po_entry",
+        "2026-06-30 11:05:33 MATCH_RUN inv=NF-2251 result=FAIL reason=PO_SYNC_PENDING",
+        "2026-06-30 11:12:08 MATCH_RUN inv=NF-2251 result=PASS",
+        "SUMMARY June: 341 exceptions, 96 PO_NOT_FOUND (28%), median resolve 2 runs"
+      ]
+    },
+    {
+      "resource_key": "art_asc606_memo_template",
+      "name": "ASC 606 non-standard arrangement memo template",
+      "type": "document",
+      "origin": "gold_document",
+      "status": "active",
+      "file": {"format": "docx", "size_kb": 44, "uploaded_at": "2026-01-10T15:00:00Z", "uploaded_by": "Dan Okafor"},
+      "input_artifacts": [],
+      "output_artifacts": [],
+      "children": [],
+      "content": [
+        "ASC 606 Memo Template (control R2R-07)",
+        "Sections: 1. Arrangement summary 2. Performance obligations 3. Transaction price",
+        "4. Allocation 5. Recognition timing 6. Preparer/reviewer sign-off"
+      ]
+    },
+    {
+      "resource_key": "art_waterfall_recon_workbook",
+      "name": "Deferred revenue waterfall reconciliation — June 2026",
+      "type": "document",
+      "origin": "system_processed",
+      "status": "active",
+      "file": {"format": "xlsx", "size_kb": 730, "uploaded_at": "2026-07-01T23:00:00Z", "uploaded_by": "Mei Chen"},
+      "input_artifacts": ["art_revrec_gold_sop"],
+      "output_artifacts": [],
+      "children": [],
+      "content": [
+        "Waterfall recon June 2026. Opening deferred 41,220,410. Additions 6,480,112. Recognized 5,912,884.",
+        "Closing deferred 41,787,638. GL tie-out variance after correction: 0. Initial variance: 18,400 (contract C-11482, mis-dated amendment).",
+        "Usage-tier true-ups computed in WB-TRUEUP-02: 2 contracts, net +41,300."
+      ]
+    },
+    {
+      "resource_key": "art_vendor_onboarding_checklist",
+      "name": "Vendor onboarding checklist (US)",
+      "type": "document",
+      "origin": "user_input",
+      "status": "active",
+      "file": {"format": "pdf", "size_kb": 61, "uploaded_at": "2026-05-12T18:30:00Z", "uploaded_by": "Priya Raman"},
+      "input_artifacts": [],
+      "output_artifacts": [],
+      "children": [],
+      "content": [
+        "US Vendor Onboarding Checklist v4",
+        "[ ] Intake packet sent (W-9, ACH form, security questionnaire)",
+        "[ ] All documents returned and TIN verified",
+        "[ ] OFAC SDN screening complete — screenshot saved to vendor folder",
+        "[ ] Banking verified by independent callback",
+        "[ ] Vendor created in Coupa (NetSuite syncs automatically)"
+      ]
+    },
+    {
+      "resource_key": "art_close_calendar",
+      "name": "Close calendar — July 2026 (v9 process)",
+      "type": "document",
+      "origin": "user_input",
+      "status": "active",
+      "file": {"format": "pdf", "size_kb": 38, "uploaded_at": "2026-06-30T22:00:00Z", "uploaded_by": "Mei Chen"},
+      "input_artifacts": [],
+      "output_artifacts": [],
+      "children": [],
+      "content": [
+        "Meridian close calendar — July 2026 (process v9)",
+        "Day -2: pre-close accrual review meeting",
+        "Day 1: AP subledger close (moved from day 2 in v9)",
+        "Day 2: AR/billing close",
+        "Day 3: revenue recognition batch posted",
+        "Day 4: balance sheet reconciliations complete",
+        "Day 5: flux analysis, reporting package, controller sign-off"
+      ]
+    },
+    {
+      "resource_key": "art_o2c_process_map",
+      "name": "Order-to-Cash process map",
+      "type": "diagram",
+      "origin": "ai_generated",
+      "status": "active",
+      "file": {"format": "svg", "size_kb": 84, "uploaded_at": "2026-04-15T12:00:00Z", "uploaded_by": "capture-agent"},
+      "input_artifacts": [],
+      "output_artifacts": [],
+      "children": [],
+      "content": [
+        "[diagram artifact] Quote Approval → Sales Order Entry → Invoice Generation → Collections & Dunning",
+        "Side flow: Sales Order Entry + Invoice Generation → Revenue Recognition → Month-End Close"
+      ]
+    }
+  ]
+}

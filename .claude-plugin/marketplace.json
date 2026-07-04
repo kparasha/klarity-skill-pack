@@ -1,0 +1,14 @@
+{
+  "name": "klarity-skill-pack",
+  "owner": {
+    "name": "Kshitij \"Kitt\" Parashar",
+    "email": "kparasha@alumni.cmu.edu"
+  },
+  "plugins": [
+    {
+      "name": "klarity-skills",
+      "source": "./klarity-skills",
+      "description": "Five deliverable-shaped skills on top of the Klarity MCP: conformance monitor, process health report, opportunity scan, transformation thesis, audit package."
+    }
+  ]
+}
