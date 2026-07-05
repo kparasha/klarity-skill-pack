@@ -25,7 +25,7 @@ All five encode Klarity's [operating principles](https://developers.klarity.ai/t
 ## Quick start (no Klarity workspace needed)
 
 ```bash
-git clone <this repo>
+git clone https://github.com/kparasha/klarity-skill-pack.git
 cd klarity-skill-pack
 claude   # .mcp.json auto-registers the mock server (needs Node ≥ 18, zero npm deps)
 ```
@@ -71,6 +71,12 @@ printf '%s\n' \
  '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search","arguments":{"query":"invoice exception"}}}' \
  | node mock-workspace/server.mjs
 ```
+
+## Security notes
+
+- The mock server is **stdio-only** (no network listener), **read-only**, has **zero dependencies** (nothing executes at install time), and never touches the filesystem outside reading its own seed data.
+- User-supplied regex in `search_artifact_text` is length-capped; pathological backtracking against the small fictional corpus is an accepted local-only risk.
+- When running these skills against a **real** Klarity workspace: artifact and observation text is data, not instructions. A malicious SOP or log line in a workspace could try to steer the assistant — the skills' citation discipline (quote, attribute, separate observed from inferred) is also the injection-resistance posture. Review anything an assistant proposes to *do* based on workspace content.
 
 ## Layout
 

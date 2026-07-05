@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "klarity-skills",
   "description": "Skill pack for the Klarity MCP: conformance monitoring, process health reports, automation opportunity scans, transformation theses, and audit packages — built on Klarity's documented read-only tool surface.",
   "version": "0.1.0",

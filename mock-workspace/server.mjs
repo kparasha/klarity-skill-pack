@@ -85,9 +85,10 @@ const impl = {
       attributes: p.attributes,
       current_version: p.current_version,
       dependencies: p.dependencies,
-      history: p.history.map(({ version_label, updated_at, change_summary }) => ({
+      history: p.history.map(({ version_label, updated_at, updated_by, change_summary }) => ({
         version_label,
         updated_at,
+        updated_by,
         change_summary,
       })),
     };
@@ -290,7 +291,7 @@ const impl = {
   get_artifact_content: ({ resource_key, start_line, end_line }) => {
     const a = ART[resource_key];
     if (!a) throw `Unknown artifact resource_key '${resource_key}'.`;
-    const s = start_line ? start_line - 1 : 0;
+    const s = start_line ? Math.max(0, start_line - 1) : 0;
     const e = end_line ?? a.content.length;
     return {
       resource_key,
@@ -304,6 +305,8 @@ const impl = {
   search_artifact_text: ({ resource_key, pattern, regex = false }) => {
     const a = ART[resource_key];
     if (!a) throw `Unknown artifact resource_key '${resource_key}'.`;
+    if (typeof pattern !== "string" || pattern.length > 200)
+      throw "pattern must be a string of at most 200 characters.";
     const re = regex ? new RegExp(pattern, "i") : null;
     const matches = [];
     a.content.forEach((line, i) => {

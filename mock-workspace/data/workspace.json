@@ -184,7 +184,7 @@
       "attributes": {"automation_status": "partially_automated", "system_of_record": "FloQast", "control_level": "SOX_entity_level", "close_target_days": 5, "last_close_actual_days": 7},
       "current_version": {
         "version_label": "v9",
-        "updated_at": "2026-06-30T22:40:00Z",
+        "updated_at": "2026-06-28T20:00:00Z",
         "updated_by": "Mei Chen",
         "change_summary": "Moved AP subledger close from day 2 to day 1 to relieve day-3 bottleneck.",
         "steps": [
@@ -199,7 +199,7 @@
       },
       "dependencies": {"upstream": ["proc_ap_invoice_exceptions", "proc_revenue_recognition", "proc_bs_reconciliation", "proc_collections_dunning"], "downstream": ["proc_flux_analysis"]},
       "history": [
-        {"version_label": "v9", "updated_at": "2026-06-30T22:40:00Z", "updated_by": "Mei Chen", "change_summary": "Moved AP subledger close from day 2 to day 1 to relieve day-3 bottleneck."},
+        {"version_label": "v9", "updated_at": "2026-06-28T20:00:00Z", "updated_by": "Mei Chen", "change_summary": "Moved AP subledger close from day 2 to day 1 to relieve day-3 bottleneck."},
         {"version_label": "v8", "updated_at": "2026-04-30T20:15:00Z", "updated_by": "Mei Chen", "change_summary": "Added pre-close accrual review meeting on business day -2."}
       ]
     },
@@ -827,7 +827,7 @@
       "type": "document",
       "origin": "user_input",
       "status": "active",
-      "file": {"format": "pdf", "size_kb": 38, "uploaded_at": "2026-06-30T22:00:00Z", "uploaded_by": "Mei Chen"},
+      "file": {"format": "pdf", "size_kb": 38, "uploaded_at": "2026-06-28T21:00:00Z", "uploaded_by": "Mei Chen"},
       "input_artifacts": [],
       "output_artifacts": [],
       "children": [],
